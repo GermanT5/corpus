@@ -149,3 +149,7 @@ The resulting has a total size of 305.85GB (real: 286GB). Here, we provide a det
 | de_head_0007_2019-47_filtered.txt |     5,657,577 |    166,562,760 |        1.26 |
 | de_head_0007_2020-10_filtered.txt |     1,204,554 |     37,558,448 |        0.28 |
 | Total:                            | 1,246,200,856 | 40,809,047,964 |      305.85 |
+
+The following figure shows an overview of number of tokens per year:
+
+![Tokens per year distribution](gc4_filtered_token_stats.png)
