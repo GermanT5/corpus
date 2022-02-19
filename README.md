@@ -153,3 +153,119 @@ The resulting has a total size of 305.85GB (real: 286GB). Here, we provide a det
 The following figure shows an overview of number of tokens per year:
 
 ![Tokens per year distribution](gc4_filtered_token_stats.png)
+
+# TensorFlow Dataset
+
+In order to use our filtered corpus for pre-training a T5 model, we need to construct a TensorFlow Dataset. It will convert the corpus into TFRecords that are loaded during pre-training.
+
+We first need to install TensorFlow Datasets library via:
+
+```bash
+$ pip3 install tensorflow-datasets
+```
+
+Then we create an empty datasets stub:
+
+```bash
+$ tfds new gc4_dataset
+```
+
+This will create the following folder structure:
+
+```bash
+$ tree gc4_dataset/
+gc4_dataset/
+├── __init__.py
+├── __pycache__
+│   └── gc4_dataset.cpython-38.pyc
+├── checksums.tsv
+├── dummy_data
+│   └── TODO-add_fake_data_in_this_directory.txt
+├── gc4_dataset.py
+└── gc4_dataset_test.py
+```
+
+We can now implement our own dataset by modifiying `gc4_dataset.py`:
+
+```python
+"""GC4 filtered dataset."""
+
+import tensorflow_datasets as tfds
+
+from pathlib import Path
+
+# TODO(gc4_dataset): Markdown description  that will appear on the catalog page.
+_DESCRIPTION = """
+Description is **formatted** as markdown.
+
+It should also contain any processing which has been applied (if any),
+(e.g. corrupted example skipped, images cropped,...):
+"""
+
+# TODO(gc4_dataset): BibTeX citation
+_CITATION = """
+"""
+
+
+class Gc4Dataset(tfds.core.GeneratorBasedBuilder):
+  """DatasetBuilder for secret_dataset dataset."""
+
+  VERSION = tfds.core.Version('1.0.0')
+  RELEASE_NOTES = {
+      '1.0.0': 'Initial release.',
+  }
+
+  def _info(self) -> tfds.core.DatasetInfo:
+    """Returns the dataset metadata."""
+    return tfds.core.DatasetInfo(
+        builder=self,
+        description=_DESCRIPTION,
+        features=tfds.features.FeaturesDict({
+            # These are the features of your dataset like images, labels ...
+            'text': tfds.features.Text(),
+        }),
+        # If there's a common (input, target) tuple from the
+        # features, specify them here. They'll be used if
+        # `as_supervised=True` in `builder.as_dataset`.
+        supervised_keys=None,  # Set to `None` to disable
+        homepage='https://dataset-homepage/',
+        citation=_CITATION,
+    )
+
+  def _split_generators(self, dl_manager: tfds.download.DownloadManager):
+    """Returns SplitGenerators."""
+    return {
+        'train':      self._generate_examples("/mnt/gc4lm/filtered"),
+        'validation': self._generate_examples("/mnt/tensorflow-datasets/german_validation")
+    }
+
+  def _generate_examples(self, root_dir):
+    """Yields examples."""
+
+    cnt = 0
+
+    for file in Path(root_dir).iterdir():
+        if not file.name.endswith(".txt"):
+            continue
+
+        with open(file, "rt") as f_p:
+            for line in f_p:
+                line = line.rstrip()
+
+                if not line:
+                    continue
+                yield cnt, {
+                    'text': line,
+                }
+                cnt += 1
+```
+
+It basically iterates over a directory containing our previously filtered data (`/mnt/gc4lm/filtered`) and reads them. In the validation folder (`/mnt/tensorflow-datasets/german_validation`) we store some data that can be used for validating the pre-trained T5 model later.
+
+After writing this custom TensorFlow datasets recipe, we can finally build the dataset using:
+
+```bash
+tfds build
+```
+
+It took around 24 hours for generating the TensorFlow dataset.
